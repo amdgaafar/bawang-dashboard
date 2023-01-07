@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "397877285439",
+    "project_id": "bawang-80997",
+    "storage_bucket": "bawang-80997.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:397877285439:android:b573fa4f9b04b905b4de8a",
+        "android_client_info": {
+          "package_name": "com.example.bawang_dashboard"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "397877285439-trpoefudl6ptg0135mh8qhrh7m8cab76.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDHyIm1Jcjlzq89jHdokB0hiA3pXWAbzbc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "397877285439-trpoefudl6ptg0135mh8qhrh7m8cab76.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "397877285439-us44gnk2441oigth88hftpj6q98oh7s9.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.bawangDashboard"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
