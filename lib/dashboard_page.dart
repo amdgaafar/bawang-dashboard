@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:bawang_dashboard/models/Bawang.dart';
 import 'package:bawang_dashboard/widgets/my_sensor_card.dart';
@@ -23,6 +22,7 @@ class _DashboardPageState extends State<DashboardPage> {
   List<double> temperatureList = [0];
   List<double> humidityList = [0];
   List<double> soilMoistureList = [0];
+  bool isWaterPumpActive = false;
 
   // Fields
   int tempField = 1;
@@ -35,30 +35,27 @@ class _DashboardPageState extends State<DashboardPage> {
   bool isLedStatusLoading = false;
   bool isDataLoading = false;
 
+  // Results
+  String waterPumpRes = "-1";
+  bool isWaterPumpLoading = false;
+
+  String waterPumpZeroRes = "-1";
+  bool isWaterPumpZeroLoading = false;
+
   String? ledStatus;
 
-  void getLedStatus() async {
-    setState(() {
-      isLedStatusLoading = true;
-    });
-
-    try {
-      var response = await Dio().get(
-          "https://api.thingspeak.com/channels/1988838/fields/5.json?api_key=O6THQIAP2H8196RS&results=1");
-      print(response);
-
-      Map<String, dynamic> resData = json.decode(response.toString());
-      var bawangObj = Bawang.fromJson(resData);
-
+  void getLedStatus() {
+    var dt = DateTime.now();
+    print(dt.hour);
+    if (int.parse(dt.hour.toString()) < 16 &&
+        int.parse(dt.hour.toString()) > 1) {
       setState(() {
-        ledStatus = bawangObj.feeds![0].field5;
+        ledStatus = "0";
       });
-      print(ledStatus);
+    } else {
       setState(() {
-        isLedStatusLoading = false;
+        ledStatus = "1";
       });
-    } catch (e) {
-      print(e);
     }
   }
 
@@ -81,19 +78,79 @@ class _DashboardPageState extends State<DashboardPage> {
       var bawangObj = Bawang.fromJson(resData);
 
       for (int i = 0; i < resultsCount; i++) {
+        // Temperature
         String? temperatureValue = bawangObj.feeds![i].field1;
+        temperatureValue == null
+            ? temperatureValue = '0.0'
+            : temperatureValue = temperatureValue;
+
+        // Humidity
         String? humidityValue = bawangObj.feeds![i].field2;
+        humidityValue == null
+            ? humidityValue = '0.0'
+            : humidityValue = humidityValue;
+
+        // Soil Moisture
         String? soilMoistureValue = bawangObj.feeds![i].field3;
+        soilMoistureValue == null
+            ? soilMoistureValue = '0.0'
+            : soilMoistureValue = soilMoistureValue;
+
+        // Water pump status
+        String? waterPumpStatus = bawangObj.feeds![i].field4;
+        waterPumpStatus == null
+            ? waterPumpStatus = '0'
+            : waterPumpStatus = waterPumpStatus;
 
         setState(() {
           temperatureList.add(double.parse(temperatureValue!));
           humidityList.add(double.parse(humidityValue!));
           soilMoistureList.add(double.parse(soilMoistureValue!));
-        });
-        setState(() {
+          waterPumpStatus == '1'
+              ? isWaterPumpActive = true
+              : isWaterPumpActive = false;
           isDataLoading = false;
         });
+        setState(() {});
       }
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  void waterPump() async {
+    setState(() {
+      isWaterPumpLoading = true;
+    });
+
+    try {
+      var response = await Dio().get(
+          "https://api.thingspeak.com/update?api_key=Y82H1TUDTF2LPTMD&field1=24&field2=91&field3=68.58&field4=1");
+      print(response.toString());
+      getData();
+      setState(() {
+        waterPumpRes = response.toString();
+        isWaterPumpLoading = false;
+      });
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  void waterPumpZero() async {
+    setState(() {
+      isWaterPumpZeroLoading = true;
+    });
+
+    try {
+      var response = await Dio().get(
+          "https://api.thingspeak.com/update?api_key=Y82H1TUDTF2LPTMD&field1=24&field2=91&field3=68.58&field4=0");
+      print(response.toString());
+      getData();
+      setState(() {
+        waterPumpZeroRes = response.toString();
+        isWaterPumpZeroLoading = false;
+      });
     } catch (e) {
       print(e);
     }
@@ -105,10 +162,8 @@ class _DashboardPageState extends State<DashboardPage> {
       appBar: AppBar(
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.dashboard),
-            const Text("Bawang Dashboard"),
-            Icon(Icons.dashboard)
+          children: const [
+            Text("Bawang Dashboard"),
           ],
         ),
         elevation: 12,
@@ -173,6 +228,75 @@ class _DashboardPageState extends State<DashboardPage> {
                                 )
                               : const Text("Refresh Data"),
                         ),
+                      ),
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Column(
+                              children: [
+                                ElevatedButton(
+                                  onPressed: waterPump,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isWaterPumpActive
+                                        ? Colors.green
+                                        : Colors.grey,
+                                    minimumSize: const Size(120, 60),
+                                  ),
+                                  child: isWaterPumpLoading
+                                      ? const CircularProgressIndicator(
+                                          color: Colors.white,
+                                        )
+                                      : const Icon(Icons.water_drop),
+                                ),
+                                waterPumpRes == '0'
+                                    ? const Text("Fail, wait 5s",
+                                        style: TextStyle(
+                                            color: Colors.redAccent,
+                                            fontWeight: FontWeight.bold))
+                                    : waterPumpRes == '-1'
+                                        ? const Text("No data, press")
+                                        : const Text("Successful",
+                                            style: TextStyle(
+                                                color: Colors.green,
+                                                fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Column(
+                              children: [
+                                ElevatedButton(
+                                  onPressed: waterPumpZero,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isWaterPumpActive
+                                        ? Colors.grey
+                                        : Colors.green,
+                                    minimumSize: const Size(120, 60),
+                                  ),
+                                  child: isWaterPumpZeroLoading
+                                      ? const CircularProgressIndicator(
+                                          color: Colors.white,
+                                        )
+                                      : const Icon(Icons.water_drop_outlined),
+                                ),
+                                waterPumpZeroRes == '0'
+                                    ? const Text("Fail, wait 5s",
+                                        style: TextStyle(
+                                            color: Colors.redAccent,
+                                            fontWeight: FontWeight.bold))
+                                    : waterPumpZeroRes == '-1'
+                                        ? const Text("No data, press")
+                                        : const Text("Successful",
+                                            style: TextStyle(
+                                                color: Colors.green,
+                                                fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
